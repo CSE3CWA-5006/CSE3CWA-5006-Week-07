@@ -1,0 +1,12 @@
+{
+  "name": "iot-mqtt-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Week 7 IoT MQTT Dashboard (Express backend + React frontend). (c) 2026 Dr Shuo Ding, AGPL-3.0-or-later.",
+  "license": "AGPL-3.0-or-later",
+  "author": "Dr Shuo Ding <shuoding@outlook.com>",
+  "type": "module",
+  "scripts": {
+    "dev": "bash run_ubuntu.sh"
+  }
+}

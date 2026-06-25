@@ -1,0 +1,16 @@
+{
+  "name": "iot-sensor-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Week 7 IoT Sensor Simulator - publishes realistic sensor readings over MQTT. (c) 2026 Dr Shuo Ding, AGPL-3.0-or-later.",
+  "license": "AGPL-3.0-or-later",
+  "author": "Dr Shuo Ding <shuoding@outlook.com>",
+  "type": "module",
+  "scripts": {
+    "start": "node sensor-publisher.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mqtt": "^5.10.1"
+  }
+}
