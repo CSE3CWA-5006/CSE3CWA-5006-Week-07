@@ -1,0 +1,354 @@
+<!--
+  CSE3CWA / CSE5006 — Week 7 Workshop Lab
+  Copyright (c) 2026 Dr Shuo Ding <shuoding@outlook.com>
+  Licensed under the GNU Affero General Public License v3.0 or later
+  (AGPL-3.0-or-later). Any copy, modification, or distribution must retain
+  this copyright notice and remain under the AGPL.
+-->
+<h4 class="resources-signpost" style="margin-bottom: 1rem;"><img
+    class="img-fluid" style="vertical-align: middle; margin-right: 0.5rem;"
+    src="/theme/latrobe/assets/2023/SVG/resources.svg" alt="" width="50"
+    height="50">Lab tasks: Build, Run and Trace an IoT Data Pipeline (MQTT +
+  MongoDB + React)</h4>
+<div
+  style="max-width: 980px; margin: 0 auto; color: #242424; font-family: Arial, Helvetica, sans-serif; line-height: 1.65;">
+  <p style="font-size: 1rem; color: #4b5563; margin-top: 0;">In this lab you
+    install and run a small but complete IoT system: a sensor simulator that
+    <strong>publishes</strong> readings over MQTT, and a dashboard that
+    <strong>subscribes</strong>, stores readings in MongoDB, and shows them live
+    in a React page. You will then read the code to see exactly how each stage
+    connects, and use Ubuntu tools to watch the data move through the broker and
+    the database with your own eyes.</p>
+  <div class="alert alert-success"
+    style="background-color: #d9ebd0; color: #242424; margin: 1.2rem auto; max-width: 900px;"
+    role="alert">
+    <div class="row">
+      <div class="col-1"> </div>
+      <div class="col-11">
+        <p><strong>Who this lab is for</strong></p>
+        <p>Parts 1–7 are for <strong>both CSE3CWA and CSE5006</strong> students.
+          <strong>Part 8 is an optional advanced extension for CSE5006 students
+            only</strong>; CSE3CWA students may read it for interest but are not
+          required to complete it.</p>
+      </div>
+    </div>
+  </div>
+  <div class="alert alert-success"
+    style="background-color: #fdf6d8; color: #242424; margin: 1.2rem auto; max-width: 900px;"
+    role="alert">
+    <div class="row">
+      <div class="col-1"> </div>
+      <div class="col-11">
+        <p><strong>How to apply code changes</strong></p>
+        <p>Changed a React file (<code>.jsx</code>) or CSS? The Vite dev server
+          hot-reloads it; just look at the browser. Changed the sensor or
+          backend (a <code>.js</code> file)? <strong>Stop that program with Ctrl
+            + C and start it again</strong> so Node runs the new code.</p>
+      </div>
+    </div>
+  </div>
+  <h4 style="margin-bottom: 1rem; color: #111827;">Part 1 — Install the services
+    on Ubuntu</h4>
+  <p>The system needs two background services: the <strong>Mosquitto</strong>
+    MQTT broker and <strong>MongoDB</strong>. A script installs and starts both.
+    You also need <strong>Node.js 20 LTS or newer</strong> (check with
+    <code>node --version</code>).</p>
+  <ol>
+    <li>Unzip the project package somewhere easy to find, and open a terminal in
+      that folder.</li>
+    <li>Run the setup script:</li>
+  </ol>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">chmod +x setup_ubuntu_services.sh
+./setup_ubuntu_services.sh</pre>
+  <p>You will be asked for your password (installing system packages needs
+    <code>sudo</code>). When it finishes, Mosquitto is listening on port
+    <code>1883</code> and MongoDB on <code>127.0.0.1:27017</code>.</p>
+  <h4 style="margin-bottom: 1rem; color: #111827;">Part 2 — Run both programs
+  </h4>
+  <p>Use two terminals. The two programs never call each other — they meet only
+    at the MQTT broker.</p>
+  <p><strong>Terminal 1 — the dashboard (backend + React frontend):</strong></p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">cd iot_mqtt_dashboard
+chmod +x run_ubuntu.sh
+./run_ubuntu.sh</pre>
+  <p>Then open the dashboard in your browser at
+    <code>http://localhost:5174</code>. It will be empty at first — that is
+    expected.</p>
+  <p><strong>Terminal 2 — the sensor simulator:</strong></p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">cd iot_sensor_simulator
+chmod +x run_ubuntu.sh
+./run_ubuntu.sh</pre>
+  <h4 style="margin-bottom: 1rem; color: #111827;">Part 3 — Visual test in the
+    browser</h4>
+  <p>With both programs running, open <code>http://localhost:5174</code> and
+    confirm the system works end to end:</p>
+  <ul>
+    <li>Within a few seconds, three <strong>reading cards</strong> appear
+      (temperature, humidity, pressure) and their values update on their own.
+    </li>
+    <li>The <strong>live chart</strong> draws a smooth curve that grows over
+      time (the values drift gently, they do not jump).</li>
+    <li>Use the <strong>Sensor</strong> dropdown to switch the chart between
+      temperature, humidity and pressure.</li>
+    <li>Use the <strong>Time window</strong> dropdown (1 / 5 / 15 / 60 minutes)
+      and watch how much history the chart shows.</li>
+    <li>The <strong>table</strong> at the bottom lists the latest reading of
+      each sensor with its device, topic and timestamps.</li>
+  </ul>
+  <p>Now open the backend health endpoint in the browser:
+    <code>http://localhost:4100/api/health</code>. Confirm that
+    <code>mqttConnected</code> and <code>mongodbConnected</code> are both
+    <code>true</code>, and that <code>storedMessages</code> rises each time you
+    refresh.</p>
+  <h4 style="margin-bottom: 1rem; color: #111827;">Part 4 — Read the code:
+    connecting to MQTT and MongoDB</h4>
+  <p>Now look at <em>how</em> the programs connect. Open the files in your
+    editor.</p>
+  <p><strong>4.1 — The sensor connects to MQTT.</strong> Open
+    <code>iot_sensor_simulator/sensor-publisher.js</code> and find the
+    connection. The simulator is an MQTT <em>client</em>;
+    <code>mqtt.connect</code> opens a connection to the broker, and the
+    <code>connect</code> event fires once it is ready:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">const brokerUrl = process.env.MQTT_BROKER_URL || "mqtt://localhost:1883";
+const client = mqtt.connect(brokerUrl, { clean: true, reconnectPeriod: 2000 });
+client.on("connect", () =&gt; { console.log(`[MQTT] Connected to ${brokerUrl}`); });</pre>
+  <p><strong>4.2 — The backend connects to MongoDB.</strong> Open
+    <code>iot_mqtt_dashboard/server/src/server.js</code> and find
+    <code>startMongo</code>. It opens the database, selects the collection, and
+    builds indexes:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">mongoClient = new MongoClient(config.mongodbUri);   // mongodb://127.0.0.1:27017
+await mongoClient.connect();
+readings = mongoClient.db(config.mongodbDb)          // week7_iot
+  .collection(config.mongodbCollection);             // sensor_readings
+await readings.createIndex({ receivedAt: -1 });</pre>
+  <p><strong>4.3 — The backend also connects to MQTT.</strong> In the same file,
+    <code>startMqtt</code> connects to the <em>same</em> broker as the sensor.
+    This is the key idea: both programs are MQTT clients of one broker.</p>
+  <h4 style="margin-bottom: 1rem; color: #111827;">Part 5 — Read the code:
+    subscribe vs publish</h4>
+  <p><strong>5.1 — The sensor publishes.</strong> In
+    <code>sensor-publisher.js</code>, each sensor builds its topic from the base
+    topic plus the sensor type, then calls <code>client.publish</code>:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">const topic = `${baseTopic}/${sensor.sensorType}`;   // e.g. .../temperature
+client.publish(topic, JSON.stringify(payload), { qos });</pre>
+  <p><strong>5.2 — The backend subscribes.</strong> In <code>server.js</code>,
+    <code>startMqtt</code> subscribes to a wildcard topic filter that matches
+    every sensor:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">mqttClient.subscribe(config.mqttSubscribeTopic, { qos: 1 });
+// MQTT_SUBSCRIBE_TOPIC = latrobe/+/+/+/+</pre>
+  <p>The sensor publishes to a 5-level topic such as
+    <code>latrobe/building-a/level-2/room-204/temperature</code>. The
+    subscription has five <code>+</code> levels, so it matches every sensor in
+    every room. <strong>Publish</strong> sends one message to one topic;
+    <strong>subscribe</strong> registers interest in a pattern of topics.</p>
+  <h4 style="margin-bottom: 1rem; color: #111827;">Part 6 — Read the code:
+    packet → MongoDB → UI</h4>
+  <p><strong>6.1 — The backend takes the packet out of MQTT and stores
+      it.</strong> When a message arrives, the <code>message</code> event gives
+    the backend the topic and the payload. It parses, normalises, validates,
+    then inserts into MongoDB:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">mqttClient.on("message", async (topic, message) =&gt; {
+  const payload = parseJsonPayload(message);          // text -&gt; object
+  const reading = normaliseReading(topic, payload);   // topic + payload -&gt; document
+  if (!isValidReading(reading)) throw new Error("rejected");
+  await readings.insertOne(reading);                  // store in MongoDB
+});</pre>
+  <p><strong>6.2 — The backend sends data to the UI.</strong> Every 5 seconds
+    the backend reads the latest data back out of MongoDB and pushes a
+    <em>snapshot</em> to the browser over a Server-Sent Events stream
+    (<code>/api/stream</code>):</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">const payload = {
+  readings: await getLatestReadings(),
+  sensorTypes: await getSensorTypes(),
+  series: await getSeries({ sensorType: "all", minutes: 0, limit: 300 })
+};
+res.write(`event: snapshot\n`);
+res.write(`data: ${JSON.stringify(payload)}\n\n`);</pre>
+  <p><strong>6.3 — The UI receives the values and displays them.</strong> Open
+    <code>iot_mqtt_dashboard/client/src/main.jsx</code>. The React app opens an
+    <code>EventSource</code> to the stream and copies each snapshot into React
+    state; React then redraws the cards, chart and table:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">const source = new EventSource(`${apiBase}/api/stream`);
+source.addEventListener("snapshot", (event) =&gt; {
+  const payload = JSON.parse(event.data);
+  setReadings(payload.readings || []);   // -&gt; the cards and table
+  setSeries(payload.series || []);       // -&gt; the chart
+});</pre>
+  <p>Trace one reading in your head: the sensor publishes it → the broker
+    delivers it → the backend stores it in MongoDB → the backend streams a
+    snapshot → React shows it. That is the whole pipeline.</p>
+  <h4 style="margin-bottom: 1rem; color: #111827;">Part 7 — Inspect the running
+    system with Ubuntu tools</h4>
+  <p>Now prove the data is really moving, using two standard command-line tools.
+    Keep both programs running and open a third terminal.</p>
+  <p><strong>7.1 — Read MongoDB directly and see the latest two
+      readings.</strong> <code>mongosh</code> is the MongoDB shell. The
+    collection is <code>sensor_readings</code> in the <code>week7_iot</code>
+    database:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">mongosh
+
+use week7_iot
+
+// the latest two readings, newest first
+db.sensor_readings.find().sort({ receivedAt: -1 }).limit(2)</pre>
+  <p>You should see the two most recently stored documents, each with
+    <code>topic</code>, <code>value</code>, <code>unit</code> and timestamps.
+    Type <code>exit</code> to leave the shell.</p>
+  <p><strong>7.2 — Watch the broker using the program's own topic.</strong> The
+    <code>mosquitto_sub</code> tool (installed with the broker) subscribes from
+    the command line. Use the <em>same</em> topic the program publishes to, so
+    you watch the exact traffic the backend receives:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;"># watch one sensor's topic
+mosquitto_sub -h localhost -t latrobe/building-a/level-2/room-204/temperature -v
+
+# or watch all sensors with the same wildcard the backend uses
+mosquitto_sub -h localhost -t "latrobe/+/+/+/+" -v</pre>
+  <p>Every 5 seconds a new JSON message prints. The <code>-v</code> flag prints
+    the topic before each message, so you can see the broker routing by topic in
+    real time. Press Ctrl + C to stop watching.</p>
+  <p><strong>7.3 — Study how the publisher composes a message.</strong> Open
+    <code>iot_sensor_simulator/sensor-publisher.js</code> and read
+    <code>buildPayload</code>. Match each field you see in the
+    <code>mosquitto_sub</code> output to a line here:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">function buildPayload(sensor) {
+  sequence += 1;
+  return {
+    deviceId: sensor.deviceId,
+    sensorType: sensor.sensorType,
+    value: sensor.nextValue(),          // the smooth random-walk value
+    unit: sensor.unit,
+    observedAt: new Date().toISOString(),
+    sequence
+  };
+}</pre>
+  <p>The object is turned into text with <code>JSON.stringify(payload)</code>
+    and handed to <code>client.publish(topic, message, { qos })</code>. That is
+    exactly the text you saw arrive in <code>mosquitto_sub</code> and get stored
+    in <code>mongosh</code> — the same message at three points in its journey.
+  </p>
+  <h4 style="margin-bottom: 1rem; color: #111827;">Part 8 — Advanced (CSE5006
+    only)</h4>
+  <div class="alert alert-success"
+    style="background-color: #e7e0f5; color: #242424; margin: 1.2rem auto; max-width: 900px;"
+    role="alert">
+    <div class="row">
+      <div class="col-1"> </div>
+      <div class="col-11">
+        <p><strong>For CSE5006 students</strong></p>
+        <p>These two extensions modify the front end and then add a new sensor
+          across the whole pipeline. CSE3CWA students are not required to do
+          this part.</p>
+      </div>
+    </div>
+  </div>
+  <p><strong>8.1 — Change the chart to a scatter plot.</strong> The chart is
+    drawn with plain SVG in the <code>LineChart</code> component in
+    <code>iot_mqtt_dashboard/client/src/main.jsx</code>. It currently renders
+    one connected <code>&lt;path&gt;</code> line. To make a scatter plot, render
+    a small <code>&lt;circle&gt;</code> at each point instead of the connecting
+    line. Find the line path element and replace it with:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">{points.map((p, i) =&gt; (
+  &lt;circle
+    key={i}
+    cx={xFor(times[i])}
+    cy={yFor(p.value)}
+    r="3.5"
+    fill={colour}
+  /&gt;
+))}</pre>
+  <p>Keep the grid lines, axis labels and the last-point marker; only swap the
+    connecting line for the circles. Save the file — Vite hot-reloads it — and
+    the chart becomes a scatter plot. (To keep both, leave the
+    <code>&lt;path&gt;</code> and add the circles as well.)</p>
+  <p><strong>8.2 — Add a new sensor (water level) end to end.</strong> This adds
+    a fourth sensor through the whole pipeline in three small steps.</p>
+  <p><strong>Step 1 — Publisher.</strong> In
+    <code>iot_sensor_simulator/sensor-publisher.js</code>, add a fourth entry to
+    the <code>sensors</code> array:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">{
+  sensorType: "waterlevel",
+  deviceId: `${devicePrefix}-waterlevel-01`,
+  unit: "percent",
+  intervalMs: 5000,
+  nextValue: createSmoothValue({ start: 60, min: 20, max: 95, maxStep: 1.0 })
+}</pre>
+  <p>Because the topic is built from <code>sensorType</code>, it will publish to
+    <code>latrobe/building-a/level-2/room-204/waterlevel</code> automatically.
+    Stop the sensor (Ctrl + C) and start it again so Node runs the new code.</p>
+  <p><strong>Step 2 — Backend.</strong> No change is needed. The backend already
+    subscribes to <code>latrobe/+/+/+/+</code>, which matches the new
+    <code>.../waterlevel</code> topic, so it stores and serves the new readings
+    immediately. Confirm with:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">curl -s "http://localhost:4100/api/sensor-types"
+# -&gt; ["humidity","pressure","temperature","waterlevel"]</pre>
+  <p>This is the payoff of the wildcard subscription: a new sensor type flows
+    through with zero backend changes.</p>
+  <p><strong>Step 3 — Frontend.</strong> The chart is data-driven, so the new
+    type already appears in the <strong>Sensor</strong> dropdown once it has
+    data. To give it a label, colour and unit (this is the “copy a chart
+    template” step — the same chart now renders the new live series), add one
+    entry to <code>SENSOR_META</code> in <code>main.jsx</code>:</p>
+  <pre class="code-window"
+    style="background: #0b1220; color: #d7e3f4; font-family: Consolas,'Courier New',monospace; font-size: 0.88rem; line-height: 1.6; padding: 1rem 1.2rem; border-radius: 10px; overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #24324a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); white-space: pre; display: block;">const SENSOR_META = {
+  temperature: { label: "Temperature", colour: "#e4572e", unit: "\u00b0C" },
+  humidity:    { label: "Humidity",    colour: "#0a8754", unit: "%" },
+  pressure:    { label: "Pressure",    colour: "#3066be", unit: "hPa" },
+  waterlevel:  { label: "Water level", colour: "#15a0c4", unit: "%" }   // new
+};</pre>
+  <p>Save the file (Vite hot-reloads it), refresh the browser, and choose
+    <strong>Water level</strong> in the Sensor dropdown to see its live chart.
+    You have now added a sensor through the publisher, the broker, the database
+    and the dashboard.</p>
+  <h4 style="margin-bottom: 1rem; color: #111827;">What to review</h4>
+  <ul>
+    <li>The dashboard at <code>http://localhost:5174</code> with the three live
+      cards and the chart (Part 3).</li>
+    <li><code>http://localhost:4100/api/health</code> showing
+      <code>mqttConnected</code> and <code>mongodbConnected</code> both true
+      (Part 3).</li>
+    <li>The <code>mongosh</code> output of the latest two readings (Part 7.1).
+    </li>
+    <li>The <code>mosquitto_sub</code> terminal showing live messages on the
+      program's topic (Part 7.2).</li>
+    <li><strong>CSE5006 only:</strong> the scatter-plot chart (Part 8.1) and the
+      <code>/api/sensor-types</code> output including <code>waterlevel</code>
+      (Part 8.2).</li>
+  </ul>
+  <h4 style="margin-bottom: 1rem; color: #111827;">What you should understand
+    after this lab</h4>
+  <ul>
+    <li>Two independent programs communicate only through the MQTT broker; the
+      broker routes messages by topic.</li>
+    <li>The sensor <strong>publishes</strong> to a specific topic; the backend
+      <strong>subscribes</strong> to a wildcard topic filter.</li>
+    <li>The backend takes each packet out of MQTT, validates it, and stores it
+      as a document in MongoDB.</li>
+    <li>The backend reads the latest data back from MongoDB and streams it to
+      the React UI, which displays it without reloading.</li>
+    <li>You can observe the same reading at three stages with standard tools:
+      <code>mosquitto_sub</code> (broker), <code>mongosh</code> (database) and
+      the API endpoint (server).</li>
+    <li><strong>CSE5006:</strong> the front end is data-driven SVG, and the
+      wildcard subscription lets a new sensor flow through the whole pipeline
+      with almost no change.</li>
+  </ul>
+</div>
+<p
+  style="text-align: center; font-size: 0.78rem; color: #8a8f98; margin-top: 2.5rem;">
+  Designed by Dr Shuo Ding © 2026</p>
